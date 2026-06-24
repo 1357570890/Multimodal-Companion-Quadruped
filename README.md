@@ -49,13 +49,13 @@ Multimodal-Companion-Quadruped/
 
 ---
 
-## 📸 运行效果展示 / Visual Demonstration
+## 📸 运行效果与 App 控制终端展示 / Visual Demonstration & Control App
 
-项目在四足机器人（机器狗）上打通了计算机视觉、目标检测与大模型决策链路，以下是实物交互与边缘计算跟踪效果：
+项目在四足机器人（机器狗）上打通了语音交互、大模型代理决策、摄像头流式图传与底层步态控制。以下是机器狗桌面实物交互场景以及配套 Android 控制 App 的功能界面：
 
-| 四足机器人智能陪伴机器狗实物 | 边缘端 MediaPipe 姿态识别与手势跟踪 UI |
-| :---: | :---: |
-| ![Robot Dog Real](images/robot_dog_real.jpg) | ![Quadruped Companion Dog GUI](images/quadruped_companion_dog_gui.png) |
+| 1. 机器狗桌面手势控制与实物交互 | 2. Android App - 语音助手控制终端 | 3. Android App - 机器人摄像头实时画面 |
+| :---: | :---: | :---: |
+| ![Robot Dog Interaction](images/companion_dog_interaction.jpg) | ![Voice Control Interface](images/companion_dog_app_voice.jpg) | ![Camera Stream Interface](images/companion_dog_app_camera.jpg) |
 
 ---
 
