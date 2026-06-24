@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>机械狗控制仿真服务器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .card {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .card h2 {
+            margin-top: 0;
+            color: #444;
+        }
+        button {
+            background: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        .command-history {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #eee;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        .command-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .command-action {
+            font-weight: bold;
+            color: #2196F3;
+        }
+        .status-online {
+            color: green;
+            font-weight: bold;
+        }
+        .video-container {
+            margin: 20px 0;
+        }
+        video {
+            width: 100%;
+            max-width: 640px;
+        }
+        .voice-files-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .voice-file-item {
+            background: #f9f9f9;
+            transition: background-color 0.2s;
+        }
+        .voice-file-item:hover {
+            background: #f0f0f0;
+        }
+        audio {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>机械狗控制仿真服务器</h1>
+        <div class="card">
+            <h2>服务器状态</h2>
+            <p>状态: <span class="status-online">在线</span></p>
+            <p>IP地址: <span id="server-ip">加载中...</span></p>
+            <p>启动时间: <span id="start-time">加载中...</span></p>
+        </div>
+
+        <div class="card">
+            <h2>功能导航</h2>
+            <button onclick="window.location.href='/api/video_stream'">查看视频流</button>
+            <button id="refresh-commands">刷新命令历史</button>
+        </div>
+
+        <div class="card">
+            <h2>控制命令历史</h2>
+            <div class="command-history" id="command-history">
+                <p>加载中...</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>语音文件</h2>
+            <p>最近上传的语音文件将显示在这里</p>
+            <div id="voice-files">
+                <p>加载中...</p>
+            </div>
+            <button id="refresh-voice-files">刷新语音文件</button>
+        </div>
+    </div>
+
+    <script>
+        // 页面加载后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 显示IP地址
+            fetch('/api/health')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('server-ip').textContent = window.location.hostname;
+                    document.getElementById('start-time').textContent = new Date().toLocaleString();
+                })
+                .catch(error => console.error('Error fetching server status:', error));
+            
+            // 加载命令历史
+            loadCommandHistory();
+            
+            // 加载语音文件
+            loadVoiceFiles();
+            
+            // 添加刷新按钮事件
+            document.getElementById('refresh-commands').addEventListener('click', loadCommandHistory);
+            document.getElementById('refresh-voice-files').addEventListener('click', loadVoiceFiles);
+        });
+        
+        // 加载命令历史
+        function loadCommandHistory() {
+            fetch('/api/commands')
+                .then(response => response.json())
+                .then(commands => {
+                    const historyElement = document.getElementById('command-history');
+                    if (commands.length === 0) {
+                        historyElement.innerHTML = '<p>暂无命令记录</p>';
+                        return;
+                    }
+                    
+                    historyElement.innerHTML = '';
+                    // 反向显示，最新的在前面
+                    commands.reverse().forEach(cmd => {
+                        const cmdElement = document.createElement('div');
+                        cmdElement.className = 'command-item';
+                        cmdElement.innerHTML = `
+                            <span class="command-action">${cmd.action}</span>
+                            <small> - ${cmd.time || '未知时间'} (来源: ${cmd.source})</small>
+                        `;
+                        historyElement.appendChild(cmdElement);
+                    });
+                })
+                .catch(error => console.error('Error loading command history:', error));
+        }
+
+        // 加载语音文件列表
+        function loadVoiceFiles() {
+            const voiceFilesDiv = document.getElementById('voice-files');
+            voiceFilesDiv.innerHTML = '<p>正在加载语音文件...</p>';
+            
+            fetch('/api/voice_files')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (!data.voice_files || data.voice_files.length === 0) {
+                        voiceFilesDiv.innerHTML = '<p>暂无语音文件</p>';
+                        return;
+                    }
+                    
+                    let html = '<div class="voice-files-list">';
+                    data.voice_files.forEach(file => {
+                        html += `
+                            <div class="voice-file-item" style="margin: 10px 0; padding: 10px; border: 1px solid #eee; border-radius: 4px;">
+                                <p><strong>文件名:</strong> ${file.filename}</p>
+                                <p><strong>上传时间:</strong> ${file.upload_time}</p>
+                                <p><strong>时长:</strong> ${file.duration}</p>
+                                <p><strong>大小:</strong> ${formatFileSize(file.size)}</p>
+                                <audio
+                                    controls
+                                    style="width: 100%;"
+                                    preload="metadata"
+                                    crossorigin="anonymous"
+                                    onplay="console.log('开始播放:', '${file.filename}')"
+                                    onloadstart="console.log('开始加载:', '${file.filename}')"
+                                    onloadeddata="console.log('数据加载完成:', '${file.filename}')"
+                                    onloadedmetadata="handleAudioMetadata(this, '${file.filename}')"
+                                    oncanplay="console.log('可以播放:', '${file.filename}')"
+                                    oncanplaythrough="console.log('可以流畅播放:', '${file.filename}')"
+                                    onerror="handleAudioError(this, '${file.filename}')"
+                                    onstalled="console.log('播放停滞:', '${file.filename}')"
+                                    onsuspend="console.log('播放暂停:', '${file.filename}')"
+                                    onabort="console.log('播放中止:', '${file.filename}')"
+                                    onemptied="console.log('播放清空:', '${file.filename}')"
+                                >
+                                    <source src="${file.url}" type="audio/mpeg">
+                                    <source src="${file.url}" type="audio/wav">
+                                    <source src="${file.url}" type="audio/mp4">
+                                    您的浏览器不支持音频播放
+                                </audio>
+                                <div class="audio-error" style="color: red; display: none;"></div>
+                                <button onclick="downloadAudio('${file.url}', '${file.filename}')" style="margin-top: 10px;">下载音频</button>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    
+                    voiceFilesDiv.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error('Error loading voice files:', error);
+                    voiceFilesDiv.innerHTML = `<p>加载语音文件失败: ${error.message}</p>`;
+                });
+        }
+
+        // 添加文件大小格式化函数
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 添加下载功能
+        function downloadAudio(url, filename) {
+            fetch(url)
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                })
+                .catch(error => console.error('下载失败:', error));
+        }
+
+        // 添加音频元数据处理函数
+        function handleAudioMetadata(audio, filename) {
+            console.log('元数据加载完成:', filename);
+            console.log('音频时长:', audio.duration, '秒');
+            console.log('音频就绪状态:', audio.readyState);
+
+            // 更新显示的时长信息
+            if (audio.duration && !isNaN(audio.duration) && isFinite(audio.duration)) {
+                const minutes = Math.floor(audio.duration / 60);
+                const seconds = Math.floor(audio.duration % 60);
+                const durationText = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                // 找到对应的时长显示元素并更新
+                const container = audio.closest('.voice-file-item');
+                const durationElement = container.querySelector('p:nth-child(3)');
+                if (durationElement) {
+                    durationElement.innerHTML = `<strong>时长:</strong> ${durationText}`;
+                }
+            }
+        }
+
+        // 添加音频错误处理函数
+        function handleAudioError(audio, filename) {
+            console.error('音频加载失败:', filename);
+            console.error('错误详情:', audio.error);
+            console.error('网络状态:', audio.networkState);
+            console.error('就绪状态:', audio.readyState);
+            console.error('当前源:', audio.currentSrc);
+
+            const errorDiv = audio.parentElement.querySelector('.audio-error');
+            errorDiv.style.display = 'block';
+
+            let errorMessage = '音频加载失败';
+            if (audio.error) {
+                switch(audio.error.code) {
+                    case 1:
+                        errorMessage = '音频加载被中止';
+                        break;
+                    case 2:
+                        errorMessage = '网络错误';
+                        break;
+                    case 3:
+                        errorMessage = '音频解码错误';
+                        break;
+                    case 4:
+                        errorMessage = '音频格式不支持';
+                        break;
+                    default:
+                        errorMessage = `未知错误 (代码: ${audio.error.code})`;
+                }
+            }
+
+            errorDiv.innerHTML = `
+                <p style="color: red; margin: 5px 0;">
+                    ${errorMessage}<br>
+                    <small>文件: ${filename}</small><br>
+                    <small>URL: ${audio.currentSrc}</small>
+                </p>
+                <button onclick="retryAudioLoad(this)" style="font-size: 12px; padding: 5px 10px;">重试加载</button>
+            `;
+        }
+
+        // 重试加载音频
+        function retryAudioLoad(button) {
+            const container = button.closest('.voice-file-item');
+            const audio = container.querySelector('audio');
+            const errorDiv = container.querySelector('.audio-error');
+
+            console.log('重试加载音频:', audio.src);
+            errorDiv.style.display = 'none';
+
+            // 重新加载音频
+            audio.load();
+
+            // 添加时间戳参数避免缓存
+            const originalSrc = audio.src.split('?')[0];
+            audio.src = originalSrc + '?t=' + Date.now();
+        }
+    </script>
+</body>
+</html> 

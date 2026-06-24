@@ -1,0 +1,110 @@
+{
+    "MAIN":{
+        "PROGRAM":"Hotspot",
+        "RC":"VTM",
+        "TRYDEMO":"Try demo",
+        "OPENING":"opening..."
+    },
+    "DEVICE":{
+        "DEVICEINFO":"About"
+    },
+    "EDUBLOCK":{
+        "NONET":"No net!"
+    },
+    "GROUP":{
+        "READY":"READY"
+    },
+    "OTA":{
+        "BURNING":"Burning"
+    },
+    "DOG_VISION_SHOW":{
+        "PRESSA":"Press A:Record",
+        "PRESSB":"Press B: End Record",
+        "PRESSC":"Press C: Quit",
+        "PRESSD":"Press D: Execute",
+        "ACTION":"ACTION",
+        "READY":"Action Group is Ready",
+        "EXECUTING":"Action Executing",
+        "DONE":"Action Done",
+        "MAX":"Maximum record of 12 sets"
+    },
+    "NETWORK":{
+        "NOQR":"No QR code detected",
+        "SPACE":"QR has space",
+        "SUCCESS":"WIFI scan successful. Exit in 8S."
+    },
+    "WIFISET":{
+        "NOW":"Current Country:",
+        "SET":"5G Channel",
+        "QUIT":"Quit",
+        "SAVED":"Set up successfully"
+    },
+    "VOLUME":{
+        "VOLUMe":"Volume",
+        "PERCENT":"Percent:",
+        "QUIT":"Quit",
+        "SAVED":"Set up successfully"
+    },
+    "LANGUAGE":{
+        "NOW":"Current language",
+        "SET":"Language setting",
+        "NoneType":"Language setting",
+        "SAVED":"Success,robot will restart in 3s"
+    },
+    "DEMOEN":{
+       "SHOW":"Show",
+        "GROUP":"Group",
+        "MASK":"Mask",
+        "HANDS":"Hands",
+        "TEACH":"Teach",
+        "SEGMENT":"Segment",
+        "FACETRACK":"FaceTrack",
+        "POSE":"Pose",
+        "QRCODE":"QRCode",
+        "SPEECH":"Speech",
+        "SPEECHAI":"Voice intelligent vision",
+        "COLOR":"Color",
+        "SOUND":"Sound",
+        "HEIGHT":"Height",
+        "YOLO":"Yolo",
+        "WIFISET":"5G",
+        "WAPSET":"Ssid",
+        "BURN":"Burn",
+        "NETWORK":"Network",
+        "VOLUME":"Volume",
+        "DEVICE":"Device",
+        "LANGUAGE":"Language",
+        "EXAMPLES":"EXAMPLES",
+        "OPENING":"OPEN...",
+        "FAIL":"FAIL",
+        "DEVICE":"Device",
+        "CHATGPT":"Q&A",
+        "GPTCMD":"RobotGPT",
+        "ANGETDOG":"Smart Dog",
+        "GPTDRAW":"gptdraw",
+        "GPTREC":"gptrec",
+        "XIAOZHI":"XIAOZHI",
+        "SFootBall":"Voice Soccer",
+        "AICAW":"Speech Caw",
+        "AILINE":"Speech Line",
+        "PLATE":"license plate",
+        "FACEONE":"Face detection",
+        "FACETWO":"Facial special effects",
+        "Finger":"Finger recognition",
+        "OBJECT":"object detection",
+        "3DOBJECT":"3D object detection",
+        "AGE_SEX":"Age and gender testing",
+        "BALLTR":"Ball tracking",
+        "BALLFORLLOW":"Small ball following",
+        "QRSPORT":"QR movement",
+        "HANDSF":"hand tracking",
+        "CLINE":"Color patrol line",
+        "LINE_CAW":"Line and wrecker",
+        "CAWSPORT":"Pick it up",
+        "FOOTBALLS":"Football sports",
+        "AITRACK":"Voice object tracking",
+        "Mobile":"wifi app",
+        "SYSTEMIMG":"Mirror information"
+        
+    }
+}

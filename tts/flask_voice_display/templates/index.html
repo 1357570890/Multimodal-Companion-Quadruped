@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>语音识别结果实时显示</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            padding: 20px 30px;
+            color: white;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-bar {
+            background: #f8f9fa;
+            padding: 15px 30px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .content {
+            padding: 30px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .results-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .result-item {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .result-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .result-item.new {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .result-id {
+            background: #007bff;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .result-timestamp {
+            color: #6c757d;
+            font-size: 12px;
+        }
+
+        .result-text {
+            font-size: 16px;
+            line-height: 1.5;
+            color: #333;
+            word-wrap: break-word;
+        }
+
+        .result-source {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .mode-badge {
+            background: #e9ecef;
+            color: #495057;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .result-item.ai-mode {
+            border-left: 4px solid #17a2b8;
+        }
+
+        .result-item.ai-mode .mode-badge {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .result-item.text-mode {
+            border-left: 4px solid #28a745;
+        }
+
+        .result-item.text-mode .mode-badge {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            color: #6c757d;
+        }
+
+        .empty-state i {
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .connection-status.connected {
+            color: #28a745;
+        }
+
+        .connection-status.disconnected {
+            color: #dc3545;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .status-bar {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .content {
+                padding: 20px;
+                max-height: 60vh;
+            }
+            
+            .result-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎤 语音识别结果实时显示</h1>
+            <p>实时接收并显示来自Android应用的语音识别结果</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-info">
+                <div class="status-indicator"></div>
+                <span class="connection-status connected" id="connectionStatus">
+                    <span id="statusText">已连接</span>
+                </span>
+                <span>总计: <span id="totalCount">0</span> 条结果</span>
+            </div>
+            <div class="controls">
+                <button class="btn btn-primary" onclick="refreshResults()">刷新</button>
+                <button class="btn btn-danger" onclick="clearResults()">清空</button>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="results-container" id="resultsContainer">
+                <div class="loading" id="loadingIndicator">
+                    <p>正在加载语音识别结果...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // WebSocket连接
+        const socket = io();
+        let results = [];
+        let isConnected = false;
+
+        // DOM元素
+        const resultsContainer = document.getElementById('resultsContainer');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const totalCount = document.getElementById('totalCount');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const statusText = document.getElementById('statusText');
+
+        // 连接状态处理
+        socket.on('connect', function() {
+            isConnected = true;
+            updateConnectionStatus();
+            console.log('已连接到服务器');
+        });
+
+        socket.on('disconnect', function() {
+            isConnected = false;
+            updateConnectionStatus();
+            console.log('与服务器断开连接');
+        });
+
+        // 接收初始结果
+        socket.on('initial_results', function(data) {
+            results = data.results || [];
+            updateTotalCount(data.total || 0);
+            renderResults();
+        });
+
+        // 接收新的语音识别结果
+        socket.on('new_voice_result', function(result) {
+            results.push(result);
+            updateTotalCount(results.length);
+            renderResults(true);
+            
+            // 滚动到最新结果
+            setTimeout(() => {
+                resultsContainer.scrollTop = resultsContainer.scrollHeight;
+            }, 100);
+        });
+
+        // 结果被清空
+        socket.on('results_cleared', function() {
+            results = [];
+            updateTotalCount(0);
+            renderResults();
+        });
+
+        // 更新连接状态
+        function updateConnectionStatus() {
+            const statusElement = connectionStatus;
+            if (isConnected) {
+                statusElement.className = 'connection-status connected';
+                statusText.textContent = '已连接';
+            } else {
+                statusElement.className = 'connection-status disconnected';
+                statusText.textContent = '连接中断';
+            }
+        }
+
+        // 更新总数
+        function updateTotalCount(count) {
+            totalCount.textContent = count;
+        }
+
+        // 渲染结果
+        function renderResults(highlightNew = false) {
+            loadingIndicator.style.display = 'none';
+            
+            if (results.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div style="font-size: 4em; margin-bottom: 20px; opacity: 0.3;">🎤</div>
+                        <h3>暂无语音识别结果</h3>
+                        <p>请从Android应用发送语音识别结果</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = results.map((result, index) => {
+                const isNew = highlightNew && index === results.length - 1;
+                const modeIcon = result.mode === 'AI' ? '🤖' : result.mode === 'TEXT' ? '📝' : '💬';
+                const modeText = result.mode === 'AI' ? 'AI推断模式' : result.mode === 'TEXT' ? '纯文本模式' : '未知模式';
+                const modeClass = result.mode === 'AI' ? 'ai-mode' : 'text-mode';
+                
+                return `
+                    <div class="result-item ${isNew ? 'new' : ''} ${modeClass}">
+                        <div class="result-header">
+                            <span class="result-id">#${result.id}</span>
+                            <span class="mode-badge">${modeIcon} ${modeText}</span>
+                            <span class="result-timestamp">${result.timestamp}</span>
+                        </div>
+                        <div class="result-text">${escapeHtml(result.text)}</div>
+                        <div class="result-source">来源: ${result.source}</div>
+                    </div>
+                `;
+            }).join('');
+
+            resultsContainer.innerHTML = html;
+
+            // 移除新项目高亮
+            if (highlightNew) {
+                setTimeout(() => {
+                    const newItems = document.querySelectorAll('.result-item.new');
+                    newItems.forEach(item => item.classList.remove('new'));
+                }, 2000);
+            }
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 刷新结果
+        function refreshResults() {
+            fetch('/api/results')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        results = data.results || [];
+                        updateTotalCount(data.total || 0);
+                        renderResults();
+                    }
+                })
+                .catch(error => {
+                    console.error('刷新结果失败:', error);
+                });
+        }
+
+        // 清空结果
+        function clearResults() {
+            if (confirm('确定要清空所有结果吗？')) {
+                fetch('/api/clear', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        results = [];
+                        updateTotalCount(0);
+                        renderResults();
+                    }
+                })
+                .catch(error => {
+                    console.error('清空结果失败:', error);
+                });
+            }
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateConnectionStatus();
+        });
+    </script>
+</body>
+</html>

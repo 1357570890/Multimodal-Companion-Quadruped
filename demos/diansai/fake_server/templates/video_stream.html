@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>机械狗视频流</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        .video-container {
+            width: 100%;
+            margin: 20px 0;
+            position: relative;
+        }
+        video {
+            width: 100%;
+            border: 1px solid #ddd;
+            background: #000;
+        }
+        img.mjpeg-stream {
+            width: 100%;
+            border: 1px solid #ddd;
+            background: #000;
+        }
+        .controls {
+            margin: 10px 0;
+        }
+        button {
+            background: #4CAF50;
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .back-link {
+            display: block;
+            margin: 20px 0;
+            color: #2196F3;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .no-video {
+            padding: 40px;
+            text-align: center;
+            background: #f9f9f9;
+            border: 1px dashed #ddd;
+        }
+        .video-options {
+            margin-bottom: 15px;
+        }
+        .video-option {
+            display: inline-block;
+            margin-right: 10px;
+            padding: 8px 12px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .video-option.active {
+            background: #2196F3;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>机械狗视频流</h1>
+        
+        <a href="/" class="back-link">← 返回主页</a>
+        
+        <div class="video-options">
+            {% if has_remote_camera %}
+            <div class="video-option" id="remote-camera-option" onclick="showRemoteCamera()">远程摄像头</div>
+            {% endif %}
+            {% if videos %}
+            <div class="video-option" id="local-video-option" onclick="showLocalVideo()">录制视频</div>
+            {% endif %}
+        </div>
+        
+        {% if has_remote_camera %}
+        <div class="video-container" id="remote-camera-container" style="display:none;">
+            <img src="/remote_camera_feed" class="mjpeg-stream" alt="远程摄像头流">
+        </div>
+        {% endif %}
+        
+        {% if videos %}
+        <div class="video-container" id="local-video-container" style="display:none;">
+            <video id="dog-video" controls autoplay>
+                <source id="video-source" src="" type="video/mp4">
+                您的浏览器不支持HTML5视频。
+            </video>
+            
+            <div class="controls">
+                <select id="video-selector" onchange="changeVideo()">
+                    {% for video in videos %}
+                    <option value="{{ video }}">{{ video }}</option>
+                    {% endfor %}
+                </select>
+                <button id="toggle-loop">循环播放: 开</button>
+            </div>
+        </div>
+        {% else %}
+        {% if not has_remote_camera %}
+        <div class="no-video">
+            <p>没有找到视频文件，请将MP4或WebM视频文件放入videos文件夹。</p>
+        </div>
+        {% endif %}
+        {% endif %}
+        
+        <div>
+            <h2>提示</h2>
+            <p>您可以选择查看远程摄像头实时画面或本地录制的视频文件。</p>
+            {% if videos %}
+            <p>要添加更多视频，只需将MP4文件放入服务器的videos目录。</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // 页面加载时选择显示的视图
+        document.addEventListener('DOMContentLoaded', function() {
+            {% if has_remote_camera %}
+            showRemoteCamera(); // 默认显示远程摄像头
+            {% elif videos %}
+            showLocalVideo();
+            {% endif %}
+        });
+        
+        function showRemoteCamera() {
+            // 隐藏本地视频容器
+            const localVideoContainer = document.getElementById('local-video-container');
+            if (localVideoContainer) {
+                localVideoContainer.style.display = 'none';
+            }
+            
+            // 显示远程摄像头容器
+            const remoteCameraContainer = document.getElementById('remote-camera-container');
+            if (remoteCameraContainer) {
+                remoteCameraContainer.style.display = 'block';
+            }
+            
+            // 更新活动标签
+            const localOption = document.getElementById('local-video-option');
+            const remoteOption = document.getElementById('remote-camera-option');
+            
+            if (localOption) localOption.classList.remove('active');
+            if (remoteOption) remoteOption.classList.add('active');
+            
+            // 如果本地视频在播放，暂停它
+            const videoElement = document.getElementById('dog-video');
+            if (videoElement) {
+                videoElement.pause();
+            }
+        }
+        
+        function showLocalVideo() {
+            // 隐藏远程摄像头容器
+            const remoteCameraContainer = document.getElementById('remote-camera-container');
+            if (remoteCameraContainer) {
+                remoteCameraContainer.style.display = 'none';
+            }
+            
+            // 显示本地视频容器
+            const localVideoContainer = document.getElementById('local-video-container');
+            if (localVideoContainer) {
+                localVideoContainer.style.display = 'block';
+            }
+            
+            // 更新活动标签
+            const localOption = document.getElementById('local-video-option');
+            const remoteOption = document.getElementById('remote-camera-option');
+            
+            if (localOption) localOption.classList.add('active');
+            if (remoteOption) remoteOption.classList.remove('active');
+            
+            // 开始播放本地视频
+            const videoElement = document.getElementById('dog-video');
+            if (videoElement) {
+                // 确保视频已加载
+                if (!videoElement.src || videoElement.src === '') {
+                    changeVideo();
+                }
+                videoElement.play();
+            }
+        }
+        
+        {% if videos %}
+        const videoElement = document.getElementById('dog-video');
+        const videoSource = document.getElementById('video-source');
+        const toggleLoopButton = document.getElementById('toggle-loop');
+        let isLooping = true;
+        
+        // 设置循环播放
+        if (videoElement) {
+            videoElement.loop = isLooping;
+            
+            // 设置循环播放按钮事件
+            if (toggleLoopButton) {
+                toggleLoopButton.addEventListener('click', function() {
+                    isLooping = !isLooping;
+                    videoElement.loop = isLooping;
+                    toggleLoopButton.textContent = `循环播放: ${isLooping ? '开' : '关'}`;
+                });
+            }
+        }
+        
+        function changeVideo() {
+            const selector = document.getElementById('video-selector');
+            if (selector && videoSource) {
+                const selectedVideo = selector.value;
+                videoSource.src = `/videos/${selectedVideo}`;
+                if (videoElement) {
+                    videoElement.load();
+                    videoElement.play();
+                }
+            }
+        }
+        {% endif %}
+    </script>
+</body>
+</html> 
