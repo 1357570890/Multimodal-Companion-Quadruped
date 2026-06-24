@@ -49,6 +49,16 @@ Multimodal-Companion-Quadruped/
 
 ---
 
+## 📸 运行效果展示 / Visual Demonstration
+
+项目在四足机器人（机器狗）上打通了计算机视觉、目标检测与大模型决策链路，以下是实物交互与边缘计算跟踪效果：
+
+| 四足机器人智能陪伴机器狗实物 | 边缘端 MediaPipe 姿态识别与手势跟踪 UI |
+| :---: | :---: |
+| ![Robot Dog Real](images/robot_dog_real.jpg) | ![Quadruped Companion Dog GUI](images/quadruped_companion_dog_gui.png) |
+
+---
+
 ## 🛠️ 安装与配置 / Setup & Configuration
 
 ### 1. 硬件依赖
